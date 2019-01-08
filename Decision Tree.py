@@ -3,11 +3,12 @@ import numpy
 import os,sys
 import graphviz
 #import pydot
-#import pydotplus
+import pydotplus
 from scipy import stats
 from sklearn.cluster import KMeans
 from matplotlib import pyplot as plt
 from sklearn import tree
+import collections
 
 
 #one time csv file generation from txt file
@@ -30,8 +31,8 @@ csv_test_data='D:\\class_work\\560\\project\Testing Data.csv'
 csv_file_sample='/Users/Sam/Downloads/Training Data.csv'
 csv_labelled_training='/Users/Sam/Downloads/Training_labelled.csv'
 csv_test_data='/Users/Sam/Downloads/Testing Data.csv'
-decision_tree_txt='/Users/Sam/Downloads/decision_tree.dot'
-csv_labelled_result='/Users/Sam/Downloads/decisiontree_result.csv'
+decision_tree_txt='/Users/Sam/Downloads/decision_tree_entropy.dot'
+csv_labelled_result='/Users/Sam/Downloads/kmeans_DT_entropy_result.csv'
 
 
 
@@ -94,24 +95,37 @@ predict_classes=kmeans.predict(X)
 
 
 
-clf = tree.DecisionTreeClassifier()
+clf = tree.DecisionTreeClassifier(criterion = 'entropy', max_features= 2)
 clf = clf.fit(X, predict_classes)
-dt_result=clf.predict([22.3,-3.9])
+dt_result=clf.predict(Y)
 
 print(dt_result)
 
 
-"""
+
 #print(clf)
 
 #tree.plot(cf)
 
 with open(decision_tree_txt,"w") as dt_f:
-    dot_data = tree.export_graphviz(clf, out_file=dt_f)
-    graph = graphviz.Source(dot_data)
+    dot_data = tree.export_graphviz(clf, out_file=None)
+    #graph = graphviz.Source(dot_data)
     #graph.write_png('somefile.png')
-#graph.render("DT")
-#(graph,) = pydot.graph_from_dot_file(decision_tree_txt)
+graph = pydotplus.graph_from_dot_data(dot_data)
+
+colors = ('turquoise', 'orange')
+edges = collections.defaultdict(list)
+
+for edge in graph.get_edge_list():
+    edges[edge.get_source()].append(int(edge.get_destination()))
+
+for edge in edges:
+    edges[edge].sort()
+    for i in range(2):
+        dest = graph.get_node(str(edges[edge][i]))[0]
+        dest.set_fillcolor(colors[i])
+
+graph.write_pdf('/Users/Sam/Downloads/tree.pdf')
 
 
 count=0
@@ -132,16 +146,14 @@ centers = kmeans.cluster_centers_
 #plt.scatter(centers[:, 0], centers[:, 1], c='black')#, s=200, alpha=0.5);
 ######
 count=0
+print(predict_classes.shape)
 with open (csv_labelled_training,'w') as wf:
     with open(csv_file_sample,'r') as f:
-        csv_writer=csv.writer(wf)
-        csv_reader= csv.reader(f,delimiter='\t')
+        csv_writer=csv.writer(wf,delimiter=',')
+        csv_reader= csv.reader(f,delimiter=',')
         for i,row in enumerate(csv_reader):
-            csv_writer.writerow(row+[predict_classes[count]])
+            csv_writer.writerow(row + [predict_classes[count]])
             count=count+1
-
-
-"""
 
 
 print ("all done")
